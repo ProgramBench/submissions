@@ -5,7 +5,7 @@ Each registered submission lives in ``submissions/<id>/`` and is self-contained:
 
     submissions/<id>/
       pointer.yaml        # fork URL + pinned commit SHA
-      submission.yaml     # manifest (model, provider, n_instances_total)
+      submission.yaml     # manifest (model, provider, agent) — no scores stored
       _stats/score.json   # {instance_id: {test_name: passed_bool}}  (per-test pass/fail)
       _stats/cost.json    # {instance_id: cost}   (optional)
       _stats/calls.json   # {instance_id: calls}  (optional)
@@ -38,6 +38,9 @@ import yaml
 PROVIDER_LOGOS = {"Anthropic": "anthropic.svg", "Google": "google.svg", "OpenAI": "openai.svg"}
 RESOLVED_THRESHOLD = 1.0
 NEAR_RESOLVED_THRESHOLD = 0.95
+# Benchmark size — the denominator for resolved% / near% (an unattempted task counts as
+# unresolved). A fixed property of the benchmark, not of any submission. Bump if it grows.
+N_BENCHMARK_INSTANCES = 200
 
 
 def _instance_score(value, ignore: set[str]) -> float:
@@ -67,7 +70,7 @@ def compile_leaderboard(registry: Path, website: Path, ignore_path: Path) -> Non
             continue
         manifest = yaml.safe_load(manifest_path.read_text())
         system = manifest["system"]
-        n_total = manifest["headline"]["n_instances_total"]
+        n_total = N_BENCHMARK_INSTANCES
 
         score_data = json.loads(score_path.read_text())
         per_instance = {iid: _instance_score(v, set(ignore_map.get(iid, []))) for iid, v in score_data.items()}

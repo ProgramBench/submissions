@@ -4,8 +4,7 @@
 Each ``submissions/<id>/`` must be a well-formed registry entry:
 
   - pointer.yaml    parses; submission_id matches the folder; has a ``source``
-  - submission.yaml parses; has system.model / system.provider / headline.n_instances_total
-                    (and none left as the ``TODO`` placeholder)
+  - submission.yaml parses; has system.model / system.provider (neither left as ``TODO``)
   - _stats/score.json parses and is a non-empty {instance_id: ...} map
 
 CI runs this on every PR so a malformed entry fails the check. Exits nonzero on any problem,
@@ -45,7 +44,7 @@ def check_entry(entry: Path) -> list[str]:
         errs.append("missing submission.yaml")
     else:
         m = yaml.safe_load(manifest.read_text()) or {}
-        for field in ("system.model", "system.provider", "headline.n_instances_total"):
+        for field in ("system.model", "system.provider"):
             if _dig(m, field) in (None, "", "TODO"):
                 errs.append(f"submission.yaml missing/placeholder '{field}'")
 
