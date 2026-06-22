@@ -74,7 +74,6 @@ def compile_leaderboard(registry: Path, website: Path, ignore_path: Path) -> Non
 
         score_data = json.loads(score_path.read_text())
         per_instance = {iid: _instance_score(v, set(ignore_map.get(iid, []))) for iid, v in score_data.items()}
-        n = len(per_instance) or 1
         entries.append(
             {
                 "model": system["model"],
@@ -86,7 +85,7 @@ def compile_leaderboard(registry: Path, website: Path, ignore_path: Path) -> Non
                 "cost": _total(entry_dir / "_stats", "cost"),
                 "calls": _total(entry_dir / "_stats", "calls"),
                 "details": f"data/details/{entry_dir.name}",
-                "mean_score": round(100 * sum(per_instance.values()) / n, 1),
+                "mean_score": round(100 * sum(per_instance.values()) / n_total, 1),
             }
         )
         out_dir = data_dir / "details" / entry_dir.name
