@@ -1,0 +1,22 @@
+# Manual paper-baseline entry — no public submission repo (source: programbench-paper).
+# _stats/score.json is per-instance (legacy float), so this entry is recorded on the
+# leaderboard but is not re-verifiable via `programbench submit verify`.
+schema_version: 1
+
+submission_id: "20260429_mini-v2.2.6_opus-4-7-xhigh"
+submitter:
+  name: "ProgramBench"
+  contact: "@programbench"
+  affiliation: "Meta"
+
+system:
+  agent: "mini-SWE-agent"
+  description_url: "https://arxiv.org/abs/2605.03546"
+  is_os_model: false
+  is_os_scaffold: true
+  model: "Claude Opus 4.7 (xhigh reasoning)"
+  provider: "Anthropic"
+  type: "agent"
+
+eval:
+  programbench_version: "1.0.2"
