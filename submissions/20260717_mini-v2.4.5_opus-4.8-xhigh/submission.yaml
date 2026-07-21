@@ -13,7 +13,7 @@ system:
   description_url: "README.md"
   is_os_model: false       # true if the model's weights are openly available
   is_os_scaffold: true # true if the agent/scaffold is open source
-  model: "Claude Opus 4.8 (xhigh reasoning)"                   # display name used on the leaderboard
+  model: "Claude Opus 4.8 (xhigh)"                   # display name used on the leaderboard
   provider: "Anthropic"
   type: "single-agent"              # single-agent | multi-agent | other
 

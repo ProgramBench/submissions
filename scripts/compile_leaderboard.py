@@ -41,7 +41,12 @@ from pathlib import Path
 
 import yaml
 
-PROVIDER_LOGOS = {"Anthropic": "anthropic.svg", "Google": "google.svg", "OpenAI": "openai.svg"}
+PROVIDER_LOGOS = {
+    "Anthropic": "anthropic.svg",
+    "Google": "google.svg",
+    "OpenAI": "openai.svg",
+    "Z.ai (Zhipu AI)": "zai.png",
+}
 RESOLVED_THRESHOLD = 1.0
 NEAR_RESOLVED_THRESHOLD = 0.95
 # Benchmark size — the denominator for resolved% / near% (an unattempted task counts as
