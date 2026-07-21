@@ -1,1 +1,3 @@
 __pycache__/
+.compile_skip
+.DS_Store

@@ -21,6 +21,12 @@ Writes the shapes the website consumes:
     <website>/data/details/<id>/score.json     # {instance_id: score}  (ignore map applied)
     <website>/data/details/<id>/{cost,calls}.json  # copied verbatim
 
+A submission id listed in ``.compile_skip`` (repo root, one id per line; blank lines and
+``#`` comments ignored) is left untouched: its existing website row + details are carried
+over verbatim instead of recompiled from ``_stats``. This is for entries whose website data
+was set by hand and would be regressed by stale/partial ``_stats``. The file is local-only
+(gitignored); the skip is a no-op wherever it is absent.
+
 Usage:
     python scripts/compile_leaderboard.py --website /path/to/website
 """
@@ -57,12 +63,43 @@ def _total(stats_dir: Path, name: str) -> float:
     return round(sum(json.loads(path.read_text()).values()), 2) if path.exists() else 0
 
 
-def compile_leaderboard(registry: Path, website: Path, ignore_path: Path) -> None:
+def _load_skip(path: Path) -> set[str]:
+    """Submission ids to leave untouched. One id per line; blank lines and #-comments ignored."""
+    if not path or not path.exists():
+        return set()
+    ids = set()
+    for line in path.read_text().splitlines():
+        line = line.split("#", 1)[0].strip()
+        if line:
+            ids.add(line)
+    return ids
+
+
+def _existing_rows(leaderboard_path: Path) -> dict[str, dict]:
+    """Existing leaderboard rows keyed by submission id (the ``details`` dir basename)."""
+    if not leaderboard_path.exists():
+        return {}
+    raw = json.loads(leaderboard_path.read_text())
+    rows = raw.get("entries", []) if isinstance(raw, dict) else raw
+    return {Path(r["details"]).name: r for r in rows if r.get("details")}
+
+
+def compile_leaderboard(registry: Path, website: Path, ignore_path: Path, skip_path: Path = None) -> None:
     ignore_map = json.loads(ignore_path.read_text()) if ignore_path.exists() else {}
     data_dir = website / "data"
     data_dir.mkdir(parents=True, exist_ok=True)  # so an empty registry still writes leaderboard.json
+    skip = _load_skip(skip_path)
+    preserved = _existing_rows(data_dir / "leaderboard.json") if skip else {}
     entries: list[dict] = []
     for entry_dir in sorted(d for d in registry.iterdir() if d.is_dir()):
+        if entry_dir.name in skip:
+            row = preserved.get(entry_dir.name)
+            if row is not None:
+                entries.append(row)  # keep existing row; leave data/details/<id>/ untouched
+                print(f"preserve {entry_dir.name}: kept existing leaderboard row + details (.compile_skip)")
+            else:
+                print(f"skip {entry_dir.name}: in .compile_skip but no existing row to preserve")
+            continue
         manifest_path = entry_dir / "submission.yaml"
         score_path = entry_dir / "_stats" / "score.json"
         if not (manifest_path.exists() and score_path.exists()):
@@ -108,9 +145,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--registry", type=Path, default=root / "submissions", help="Directory of <id>/ entries.")
     parser.add_argument("--ignore", type=Path, default=root / "ignored_tests.json", help="{iid: [test]} ignore map.")
+    parser.add_argument("--skip", type=Path, default=root / ".compile_skip",
+                        help="Local-only list of submission ids to leave untouched (not refreshed).")
     parser.add_argument("--website", type=Path, required=True, help="Website repo root (writes under its data/).")
     args = parser.parse_args()
-    compile_leaderboard(args.registry, args.website, args.ignore)
+    compile_leaderboard(args.registry, args.website, args.ignore, args.skip)
 
 
 if __name__ == "__main__":
