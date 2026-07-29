@@ -9,6 +9,7 @@ Each registered submission lives in ``submissions/<id>/`` and is self-contained:
       _stats/score.json   # {instance_id: {test_name: passed_bool}}  (per-test pass/fail)
       _stats/cost.json    # {instance_id: cost}   (optional)
       _stats/calls.json   # {instance_id: calls}  (optional)
+      _stats/tokens.json  # {instance_id: output_tokens}  (optional)
 
 Scores are recomputed here from the per-test ``score.json``, so striking out bad tests is
 a pure recompile: add the test to ``ignored_tests.json`` (a {instance_id: [test_name]} map
@@ -19,13 +20,15 @@ Writes the shapes the website consumes:
 
     <website>/data/leaderboard.json            # row per submission
     <website>/data/details/<id>/score.json     # {instance_id: score}  (ignore map applied)
-    <website>/data/details/<id>/{cost,calls}.json  # copied verbatim
+    <website>/data/details/<id>/{cost,calls,tokens}.json  # copied verbatim
 
 A submission id listed in ``.compile_skip`` (repo root, one id per line; blank lines and
 ``#`` comments ignored) is left untouched: its existing website row + details are carried
 over verbatim instead of recompiled from ``_stats``. This is for entries whose website data
 was set by hand and would be regressed by stale/partial ``_stats``. The file is local-only
-(gitignored); the skip is a no-op wherever it is absent.
+(gitignored); the skip is a no-op wherever it is absent. As an exception, a skipped row is
+still augmented with the ``tokens`` metric when ``_stats/tokens.json`` is present: tokens is
+additive (nothing existing to regress), so it is surfaced for frozen rows too.
 
 Usage:
     python scripts/compile_leaderboard.py --website /path/to/website
@@ -45,7 +48,7 @@ PROVIDER_LOGOS = {
     "Anthropic": "anthropic.svg",
     "Google": "google.svg",
     "OpenAI": "openai.svg",
-    "Z.ai (Zhipu AI)": "zai.png",
+    "Z.ai (Zhipu AI)": "zai.svg",
 }
 RESOLVED_THRESHOLD = 1.0
 NEAR_RESOLVED_THRESHOLD = 0.95
@@ -100,7 +103,15 @@ def compile_leaderboard(registry: Path, website: Path, ignore_path: Path, skip_p
         if entry_dir.name in skip:
             row = preserved.get(entry_dir.name)
             if row is not None:
-                entries.append(row)  # keep existing row; leave data/details/<id>/ untouched
+                # Keep the existing row + details, but additively surface the (new) tokens
+                # metric from _stats/tokens.json if present. Score/cost/calls stay verbatim.
+                tokens_path = entry_dir / "_stats" / "tokens.json"
+                if tokens_path.exists():
+                    row["tokens"] = _total(entry_dir / "_stats", "tokens")
+                    out_dir = data_dir / "details" / entry_dir.name
+                    out_dir.mkdir(parents=True, exist_ok=True)
+                    shutil.copyfile(tokens_path, out_dir / "tokens.json")
+                entries.append(row)
                 print(f"preserve {entry_dir.name}: kept existing leaderboard row + details (.compile_skip)")
             else:
                 print(f"skip {entry_dir.name}: in .compile_skip but no existing row to preserve")
@@ -126,6 +137,7 @@ def compile_leaderboard(registry: Path, website: Path, ignore_path: Path, skip_p
                 "near_resolved": round(100 * sum(s >= NEAR_RESOLVED_THRESHOLD for s in per_instance.values()) / n_total, 1),
                 "cost": _total(entry_dir / "_stats", "cost"),
                 "calls": _total(entry_dir / "_stats", "calls"),
+                "tokens": _total(entry_dir / "_stats", "tokens"),
                 "details": f"data/details/{entry_dir.name}",
                 "mean_score": round(100 * sum(per_instance.values()) / n_total, 1),
             }
@@ -133,7 +145,7 @@ def compile_leaderboard(registry: Path, website: Path, ignore_path: Path, skip_p
         out_dir = data_dir / "details" / entry_dir.name
         out_dir.mkdir(parents=True, exist_ok=True)
         (out_dir / "score.json").write_text(json.dumps(per_instance, indent=2, sort_keys=True))
-        for name in ("cost", "calls"):
+        for name in ("cost", "calls", "tokens"):
             p = entry_dir / "_stats" / f"{name}.json"
             if p.exists():
                 shutil.copyfile(p, out_dir / f"{name}.json")
