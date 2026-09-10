@@ -23,12 +23,13 @@ Writes the shapes the website consumes:
     <website>/data/details/<id>/{cost,calls,tokens}.json  # copied verbatim
 
 A submission id listed in ``.compile_skip`` (repo root, one id per line; blank lines and
-``#`` comments ignored) is left untouched: its existing website row + details are carried
-over verbatim instead of recompiled from ``_stats``. This is for entries whose website data
+``#`` comments ignored) keeps its existing website details instead of recompiling them from
+``_stats``. Its headline is still recomputed from the preserved per-instance scores, so the
+fixed 200-instance denominator applies to every row. This is for entries whose website data
 was set by hand and would be regressed by stale/partial ``_stats``. The file is local-only
-(gitignored); the skip is a no-op wherever it is absent. As an exception, a skipped row is
-still augmented with the ``tokens`` metric when ``_stats/tokens.json`` is present: tokens is
-additive (nothing existing to regress), so it is surfaced for frozen rows too.
+(gitignored); the skip is a no-op wherever it is absent. A skipped row is also augmented with
+the ``tokens`` metric when ``_stats/tokens.json`` is present: tokens is additive (nothing
+existing to regress), so it is surfaced for frozen rows too.
 
 Usage:
     python scripts/compile_leaderboard.py --website /path/to/website
@@ -47,6 +48,7 @@ import yaml
 PROVIDER_LOGOS = {
     "Anthropic": "anthropic.svg",
     "Google": "google.svg",
+    "Meta": "meta.svg",
     "OpenAI": "openai.svg",
     "Z.ai (Zhipu AI)": "zai.svg",
 }
@@ -69,6 +71,21 @@ def _instance_score(value, ignore: set[str]) -> float:
 def _total(stats_dir: Path, name: str) -> float:
     path = stats_dir / f"{name}.json"
     return round(sum(json.loads(path.read_text()).values()), 2) if path.exists() else 0
+
+
+def _headline(per_instance: dict[str, float]) -> dict[str, float]:
+    """Macro-average over the full benchmark, treating missing instances as zero."""
+    return {
+        "resolved": round(
+            100 * sum(score >= RESOLVED_THRESHOLD for score in per_instance.values()) / N_BENCHMARK_INSTANCES,
+            1,
+        ),
+        "near_resolved": round(
+            100 * sum(score >= NEAR_RESOLVED_THRESHOLD for score in per_instance.values()) / N_BENCHMARK_INSTANCES,
+            1,
+        ),
+        "mean_score": round(100 * sum(per_instance.values()) / N_BENCHMARK_INSTANCES, 1),
+    }
 
 
 def _load_skip(path: Path) -> set[str]:
@@ -103,8 +120,15 @@ def compile_leaderboard(registry: Path, website: Path, ignore_path: Path, skip_p
         if entry_dir.name in skip:
             row = preserved.get(entry_dir.name)
             if row is not None:
-                # Keep the existing row + details, but additively surface the (new) tokens
-                # metric from _stats/tokens.json if present. Score/cost/calls stay verbatim.
+                # Keep the existing per-instance details, but always derive headline scores
+                # from them. This prevents legacy rows from retaining the old attempted-only
+                # denominator while current rows use the full benchmark denominator.
+                score_path = data_dir / "details" / entry_dir.name / "score.json"
+                if not score_path.exists():
+                    raise FileNotFoundError(f"cannot preserve {entry_dir.name}: missing {score_path}")
+                row.update(_headline(json.loads(score_path.read_text())))
+                # Additively surface the (new) tokens metric from _stats/tokens.json if
+                # present. Cost/calls stay verbatim.
                 tokens_path = entry_dir / "_stats" / "tokens.json"
                 if tokens_path.exists():
                     row["tokens"] = _total(entry_dir / "_stats", "tokens")
@@ -123,23 +147,23 @@ def compile_leaderboard(registry: Path, website: Path, ignore_path: Path, skip_p
             continue
         manifest = yaml.safe_load(manifest_path.read_text())
         system = manifest["system"]
-        n_total = N_BENCHMARK_INSTANCES
 
         score_data = json.loads(score_path.read_text())
         per_instance = {iid: _instance_score(v, set(ignore_map.get(iid, []))) for iid, v in score_data.items()}
+        headline = _headline(per_instance)
         entries.append(
             {
                 "model": system["model"],
                 "provider": system["provider"],
                 "logo": PROVIDER_LOGOS.get(system["provider"], ""),
                 "agent": system["agent"],
-                "resolved": round(100 * sum(s >= RESOLVED_THRESHOLD for s in per_instance.values()) / n_total, 1),
-                "near_resolved": round(100 * sum(s >= NEAR_RESOLVED_THRESHOLD for s in per_instance.values()) / n_total, 1),
+                "resolved": headline["resolved"],
+                "near_resolved": headline["near_resolved"],
                 "cost": _total(entry_dir / "_stats", "cost"),
                 "calls": _total(entry_dir / "_stats", "calls"),
                 "tokens": _total(entry_dir / "_stats", "tokens"),
                 "details": f"data/details/{entry_dir.name}",
-                "mean_score": round(100 * sum(per_instance.values()) / n_total, 1),
+                "mean_score": headline["mean_score"],
             }
         )
         out_dir = data_dir / "details" / entry_dir.name
