@@ -169,7 +169,7 @@ def compile_leaderboard(registry: Path, website: Path, ignore_path: Path, skip_p
         out_dir = data_dir / "details" / entry_dir.name
         out_dir.mkdir(parents=True, exist_ok=True)
         (out_dir / "score.json").write_text(json.dumps(per_instance, indent=2, sort_keys=True))
-        for name in ("cost", "calls", "tokens"):
+        for name in ("cost", "calls", "tokens", "languages"):
             p = entry_dir / "_stats" / f"{name}.json"
             if p.exists():
                 shutil.copyfile(p, out_dir / f"{name}.json")
