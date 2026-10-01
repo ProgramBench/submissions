@@ -1,0 +1,21 @@
+# Generated submission manifest for the strict two-solve cleanroom package.
+schema_version: 1
+
+submission_id: "20260824_dtl-supermath-2solve-cleanroom-v2"
+submitter:
+  name: "Kyal"
+  contact: "@kyal102"
+  affiliation: "JARVI3 / EcoKure"
+
+system:
+  agent: "DTL/SuperMath verifier + mini-SWE-agent"
+  description_url: "README.md"
+  is_os_model: false
+  is_os_scaffold: true
+  model: "Jarvi3: Themis-G"
+  provider: "JARVI3"
+  type: "agent"
+
+eval:
+  programbench_version: "1.2.3"
+
