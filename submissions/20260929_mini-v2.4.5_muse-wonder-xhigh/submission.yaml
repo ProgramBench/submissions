@@ -18,6 +18,7 @@ system:
   type: "single-agent"              # single-agent | multi-agent | other
 
 eval:
+  cost_is_estimate: true
   programbench_version: "1.2.5"   # [auto]
 # Scores are not stored here: the leaderboard recomputes them from _stats/score.json with the
 # registry's current ignored-tests list, so any cached numbers would just go stale.
