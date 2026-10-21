@@ -14,6 +14,7 @@ system:
   is_os_model: false       # true if the model's weights are openly available
   is_os_scaffold: true # true if the agent/scaffold is open source
   model: "Claude Haiku 4.5"                   # display name used on the leaderboard
+  release_date: "2025-10-15"           # model's public release (YYYY-MM-DD); used for the leaderboard date axis
   provider: "Anthropic"
   type: "agent"              # single-agent | multi-agent | other
 

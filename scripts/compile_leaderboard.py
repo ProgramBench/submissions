@@ -5,7 +5,7 @@ Each registered submission lives in ``submissions/<id>/`` and is self-contained:
 
     submissions/<id>/
       pointer.yaml        # fork URL + pinned commit SHA
-      submission.yaml     # manifest (model, provider, agent) — no scores stored
+      submission.yaml     # manifest (model, provider, agent, release_date) — no scores stored
       _stats/score.json   # {instance_id: {test_name: passed_bool}}  (per-test pass/fail)
       _stats/cost.json    # {instance_id: cost}   (optional)
       _stats/calls.json   # {instance_id: calls}  (optional)
@@ -88,6 +88,14 @@ def _headline(per_instance: dict[str, float]) -> dict[str, float]:
     }
 
 
+def _release_date(manifest_path: Path) -> str | None:
+    """``system.release_date`` (YYYY-MM-DD, the model's public release) from a manifest, if set."""
+    if not manifest_path.exists():
+        return None
+    value = ((yaml.safe_load(manifest_path.read_text()) or {}).get("system") or {}).get("release_date")
+    return str(value) if value else None
+
+
 def _load_skip(path: Path) -> set[str]:
     """Submission ids to leave untouched. One id per line; blank lines and #-comments ignored."""
     if not path or not path.exists():
@@ -135,6 +143,10 @@ def compile_leaderboard(registry: Path, website: Path, ignore_path: Path, skip_p
                     out_dir = data_dir / "details" / entry_dir.name
                     out_dir.mkdir(parents=True, exist_ok=True)
                     shutil.copyfile(tokens_path, out_dir / "tokens.json")
+                # Release date is manifest metadata, so it is always taken from submission.yaml.
+                row.pop("release_date", None)
+                if release_date := _release_date(entry_dir / "submission.yaml"):
+                    row["release_date"] = release_date
                 entries.append(row)
                 print(f"preserve {entry_dir.name}: kept existing leaderboard row + details (.compile_skip)")
             else:
@@ -166,6 +178,8 @@ def compile_leaderboard(registry: Path, website: Path, ignore_path: Path, skip_p
                 "mean_score": headline["mean_score"],
             }
         )
+        if release_date := _release_date(manifest_path):
+            entries[-1]["release_date"] = release_date
         out_dir = data_dir / "details" / entry_dir.name
         out_dir.mkdir(parents=True, exist_ok=True)
         (out_dir / "score.json").write_text(json.dumps(per_instance, indent=2, sort_keys=True))

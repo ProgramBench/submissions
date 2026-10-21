@@ -14,6 +14,7 @@ system:
   is_os_model: false       # true if the model's weights are openly available
   is_os_scaffold: true # true if the agent/scaffold is open source
   model: "GPT-5.6 Sol"                   # display name used on the leaderboard
+  release_date: "2026-07-09"           # model's public release (YYYY-MM-DD); used for the leaderboard date axis
   provider: "OpenAI"
   type: "single-agent"              # single-agent | multi-agent | other
 

@@ -14,6 +14,7 @@ system:
   is_os_model: false       # true if the model's weights are openly available
   is_os_scaffold: true # true if the agent/scaffold is open source
   model: "Gemini 3.1 Pro"                   # display name used on the leaderboard
+  release_date: "2026-02-19"           # model's public release (YYYY-MM-DD); used for the leaderboard date axis
   provider: "Google"
   type: "agent"              # single-agent | multi-agent | other
 

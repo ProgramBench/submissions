@@ -14,6 +14,7 @@ system:
   is_os_model: true       # true if the model's weights are openly available
   is_os_scaffold: true # true if the agent/scaffold is open source
   model: "GLM-5.2"                   # display name used on the leaderboard
+  release_date: "2026-06-13"           # model's public release (YYYY-MM-DD); used for the leaderboard date axis
   provider: "Z.ai (Zhipu AI)"
   type: "single-agent"              # single-agent | multi-agent | other
 
