@@ -4,7 +4,8 @@
 Each ``submissions/<id>/`` must be a well-formed registry entry:
 
   - pointer.yaml    parses; submission_id matches the folder; has a ``source``
-  - submission.yaml parses; has system.model / system.provider (neither left as ``TODO``)
+  - submission.yaml parses; has system.model / system.provider (neither left as ``TODO``);
+                    system.release_date, if set, is a YYYY-MM-DD date
   - _stats/score.json parses and is a non-empty {instance_id: ...} map
 
 CI runs this on every PR so a malformed entry fails the check. Exits nonzero on any problem,
@@ -13,6 +14,7 @@ emitting GitHub Actions ``::error::`` annotations.
 
 import json
 import sys
+from datetime import date
 from pathlib import Path
 
 import yaml
@@ -47,6 +49,12 @@ def check_entry(entry: Path) -> list[str]:
         for field in ("system.model", "system.provider"):
             if _dig(m, field) in (None, "", "TODO"):
                 errs.append(f"submission.yaml missing/placeholder '{field}'")
+        release_date = _dig(m, "system.release_date")
+        if release_date:
+            try:
+                date.fromisoformat(str(release_date))
+            except ValueError:
+                errs.append(f"submission.yaml system.release_date ({release_date!r}) is not YYYY-MM-DD")
 
     score = entry / "_stats" / "score.json"
     if not score.exists():
