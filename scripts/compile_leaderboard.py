@@ -171,13 +171,15 @@ def compile_leaderboard(registry: Path, website: Path, ignore_path: Path, skip_p
                 "agent": system["agent"],
                 "resolved": headline["resolved"],
                 "near_resolved": headline["near_resolved"],
-                "cost": _total(entry_dir / "_stats", "cost"),
+                "cost": _total(entry_dir / "_stats", "cost") if (entry_dir / "_stats" / "cost.json").exists() else None,
                 "calls": _total(entry_dir / "_stats", "calls"),
                 "tokens": _total(entry_dir / "_stats", "tokens"),
                 "details": f"data/details/{entry_dir.name}",
                 "mean_score": headline["mean_score"],
             }
         )
+        if manifest.get("eval", {}).get("cost_is_estimate"):
+            entries[-1]["cost_is_estimate"] = True
         if release_date := _release_date(manifest_path):
             entries[-1]["release_date"] = release_date
         out_dir = data_dir / "details" / entry_dir.name
