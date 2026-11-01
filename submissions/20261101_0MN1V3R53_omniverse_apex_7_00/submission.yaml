@@ -1,0 +1,19 @@
+schema_version: 1
+
+submission_id: "20261101_0MN1V3R53_omniverse_apex_7_00"
+submitter:
+  name: "D'Arcy Johnathan Boevey Barrett"
+  contact: "@0MN1V3R53"
+  affiliation: "Omniverse Technologies"
+
+system:
+  agent: "0MN1V3R53 Omniverse Apex 7.00 (12-Pillar Cognitive OS)"
+  description_url: "https://github.com/0MN1V3R53/omniverse-os"
+  is_os_model: false
+  is_os_scaffold: true
+  model: "0MN1V3R53-Omniverse-Apex-7.00"
+  provider: "Omniverse Technologies"
+  type: "multi-agent"
+
+eval:
+  programbench_version: "1.2.4"

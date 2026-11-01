@@ -1,0 +1,19 @@
+schema_version: 1
+
+submission_id: "20260908_omniverse_apex_v5"
+submitter:
+  name: "D'Arcy Johnathan Boevey Barrett"
+  contact: "@0MN1V3R53"
+  affiliation: "Omniverse Technologies"
+
+system:
+  agent: "Omniverse Apex v5 Cleanroom Reconstruction Scaffold"
+  description_url: "https://github.com/0MN1V3R53/omniverse-os"
+  is_os_model: false
+  is_os_scaffold: true
+  model: "Omniverse Apex v5"
+  provider: "Omniverse Technologies"
+  type: "multi-agent"
+
+eval:
+  programbench_version: "1.2.4"
